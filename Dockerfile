@@ -31,12 +31,14 @@ ENV PATH $JAVA_HOME/bin:$PATH
 ADD docker/bluefairy-0.1.0.jar /opt/bluefairy/target/
 
 # proxy install
-ADD docker/proxy.py /opt/
-RUN chmod +x /opt/proxy.py
+ADD docker/unix-socket-proxy /etc/nginx/sites-available/
+RUN apt-get -y install nginx && apt-get clean
+RUN ln -s /etc/nginx/sites-available/unix-socket-proxy /etc/nginx/sites-enabled/
 
 RUN printf '#!/bin/bash \n\
-python /opt/proxy.py & \n\
+chmod 666 /tmp/docker_socket \n\
 java -jar /opt/bluefairy/target/bluefairy-0.1.0.jar --server.port=8080 --bluefairy.docker.remoteApi=http://127.0.0.1:55110/ & \n\
+/etc/init.d/nginx start \n\
 /usr/sbin/sshd -D \n\
 tail -f /var/null  \n\
 ' >> /etc/service.sh \
