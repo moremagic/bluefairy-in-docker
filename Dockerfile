@@ -27,6 +27,11 @@ RUN apt-get install -q -y openjdk-7-jre-headless openjdk-7-jdk && apt-get clean
 ENV JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64/
 ENV PATH $JAVA_HOME/bin:$PATH
 
+# mongodb install
+RUN apt-get install -y mongodb
+ADD docker/mongo_setup.sh /etc/
+RUN chmod +x /etc/mongo_setup.sh
+
 # bluefariy install
 ADD docker/bluefairy-0.1.0.jar /opt/bluefairy/target/
 
@@ -36,11 +41,13 @@ RUN apt-get -y install nginx && apt-get clean
 RUN ln -s /etc/nginx/sites-available/unix-socket-proxy /etc/nginx/sites-enabled/
 
 RUN printf '#!/bin/bash \n\
+service mongodb start && sleep 10s \n\
+/etc/mongo_setup.sh > /etc/mongo_debug.log \n\
 chmod 666 /tmp/docker_socket \n\
 java -jar /opt/bluefairy/target/bluefairy-0.1.0.jar --server.port=8080 --bluefairy.docker.remoteApi=http://127.0.0.1:55110/ & \n\
 /etc/init.d/nginx start \n\
 /usr/sbin/sshd -D \n\
-tail -f /var/null  \n\
+tail -f /var/null \n\
 ' >> /etc/service.sh \
     && chmod +x /etc/service.sh
 
