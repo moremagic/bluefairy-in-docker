@@ -41,9 +41,10 @@ RUN apt-get -y install nginx && apt-get clean
 RUN ln -s /etc/nginx/sites-available/unix-socket-proxy /etc/nginx/sites-enabled/
 
 RUN printf '#!/bin/bash \n\
-service mongodb start && sleep 10s \n\
+/etc/init.d/mongodb start \n\
 /etc/mongo_setup.sh > /etc/mongo_debug.log \n\
-chmod 666 /tmp/docker_socket \n\
+#chown root:root /tmp/docker_socket \n\
+chmod +rw /tmp/docker_socket \n\
 java -jar /opt/bluefairy/target/bluefairy-0.1.0.jar --server.port=8080 --logging.file=/var/log/bluefairy.log --bluefairy.docker.remoteApi=http://127.0.0.1:55110/ & \n\
 /etc/init.d/nginx start \n\
 /usr/sbin/sshd -D \n\
