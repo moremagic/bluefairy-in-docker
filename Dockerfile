@@ -5,7 +5,7 @@
 #
 
 # Pull base image.
-FROM ubuntu:14.04
+FROM ubuntu:15.10
 MAINTAINER moremagic<itoumagic@gmail.com>
 
 RUN apt-get update && apt-get upgrade -y && apt-get clean
@@ -23,14 +23,17 @@ ENV NOTVISIBLE "in users profile"
 RUN echo "export VISIBLE=now" >> /etc/profile
 
 # Java install
-RUN apt-get install -q -y openjdk-7-jre-headless openjdk-7-jdk && apt-get clean
-ENV JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64/
+RUN apt-get install -q -y openjdk-8-jdk && apt-get clean
+ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
 ENV PATH $JAVA_HOME/bin:$PATH
 
 # mongodb install
 RUN apt-get install -y mongodb
 ADD docker/mongo_setup.sh /etc/
 RUN chmod +x /etc/mongo_setup.sh
+
+# docker-proxy install
+ADD docker-proxy /opt/docker-proxy/
 
 # bluefariy install
 ADD docker/bluefairy-0.1.0.jar /opt/bluefairy/target/
@@ -44,7 +47,8 @@ RUN printf '#!/bin/bash \n\
 /etc/init.d/mongodb start \n\
 /etc/mongo_setup.sh > /etc/mongo_debug.log \n\
 chmod 666 /tmp/docker_socket \n\
-java -jar /opt/bluefairy/target/bluefairy-0.1.0.jar --server.port=8080 --logging.file=/var/log/bluefairy.log --bluefairy.docker.remoteApi=http://127.0.0.1:55110/ & \n\
+java -jar /opt/bluefairy/target/bluefairy-0.1.0.jar --server.port=8080 --logging.file=/var/log/bluefairy.log --bluefairy.docker.remoteApi=http://127.0.0.1:55111/ & \n\
+java -cp /opt/docker-proxy/HttpSocks.jar:/opt/docker-proxy/jsonic-1.3.10.jar httpsocks.HttpSocks 55111 $DOKER_HOSTS > /var/log/docker-proxy.log 2>1& \n\
 /etc/init.d/nginx start \n\
 /usr/sbin/sshd -D \n\
 tail -f /var/null \n\
